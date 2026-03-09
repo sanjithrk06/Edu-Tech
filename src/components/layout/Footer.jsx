@@ -191,7 +191,7 @@ const Footer = () => {
                     <ChevronRight className="w-4 h-4 text-primary/60" />
                   </motion.div>
                   <a
-                    href={`/${item.toLowerCase().replace(" ", "-")}`}
+                    href={`/courses/${item.toLowerCase().replace(" ", "-")}`}
                     className=" nav-content"
                   >
                     {item}

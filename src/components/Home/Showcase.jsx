@@ -79,8 +79,8 @@ const Showcase = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-cream/20 to-cream/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"></div>
           </div>
           {/* Background Decorative Circle */}
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-cream/40 rounded-full"></div>
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cream/40 rounded-full"></div>
+          <div className=" max-md:hidden absolute -top-10 -left-10 w-40 h-40 bg-cream/40 rounded-full"></div>
+          <div className=" max-md:hidden absolute -bottom-10 -right-10 w-40 h-40 bg-cream/40 rounded-full"></div>
         </motion.div>
       </div>
     </motion.section>

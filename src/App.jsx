@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
 import router from "./routers/Router";
-import { Loader } from "./components";
+import { BookingButton, Loader } from "./components";
 import { useAuthStore } from "./store/authStore";
 import { useZoomControl } from "./hooks/useZoomControl";
 import { HelmetProvider } from "react-helmet-async";
@@ -38,6 +38,7 @@ const App = () => {
         )}
       </div>
       {/* <BookingButton /> */}
+      <BookingButton />
       <ToastContainer
         position="top-right"
         autoClose={5000}

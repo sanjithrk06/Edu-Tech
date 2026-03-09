@@ -30,7 +30,20 @@ export default function CareersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50/20">
       <Helmet>
-        <title>Careers</title>
+        <title>Careers | InnovSTEM</title>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="title" content="Careers | InnovSTEM" />
+        <meta
+          name="description"
+          content="InnovSTEM offers innovative K-12 STEM education programs and curriculum to inspire future innovators."
+        />
+        <meta
+          name="keywords"
+          content="STEM education, K-12 STEM curriculum, STEM programs, science education, InnovSTEM"
+        />
+        <meta property="og:url" content="https://innovstem.com/" />
+        <meta property="og:site_name" content="InnovSTEM" />
       </Helmet>
       {/* Page Header */}
       <div

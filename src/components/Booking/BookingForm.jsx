@@ -3,7 +3,8 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+// Remove the useNavigate import since it's causing the error
+// import { useNavigate } from "react-router-dom";
 
 // Framer Motion variants
 const formVariants = {
@@ -20,7 +21,9 @@ const fieldVariants = {
   }),
 };
 
-export default function BookingForm({ selectedPackage, onBack }) {
+export default function BookingForm({ selectedPackage, onBack, onSuccess }) {
+  // Remove the navigate hook since it's not available in this context
+  // const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -40,19 +43,41 @@ export default function BookingForm({ selectedPackage, onBack }) {
 
   // Load Razorpay script
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => setIsRazorpayLoaded(true);
-    script.onerror = () => {
-      toast.error("Failed to load payment gateway");
-      setIsRazorpayLoaded(false);
+    const loadRazorpay = () => {
+      // Check if Razorpay is already loaded
+      if (window.Razorpay) {
+        setIsRazorpayLoaded(true);
+        return;
+      }
+
+      // Remove any existing script
+      const existingScript = document.querySelector('script[src*="razorpay"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => {
+        console.log("Razorpay script loaded successfully");
+        setIsRazorpayLoaded(true);
+      };
+      script.onerror = (error) => {
+        console.error("Failed to load Razorpay script:", error);
+        toast.error("Failed to load payment gateway. Please refresh the page.");
+        setIsRazorpayLoaded(false);
+      };
+      document.head.appendChild(script);
     };
-    document.body.appendChild(script);
+
+    loadRazorpay();
 
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+      // Cleanup - remove script on unmount
+      const script = document.querySelector('script[src*="razorpay"]');
+      if (script && document.head.contains(script)) {
+        document.head.removeChild(script);
       }
     };
   }, []);
@@ -66,6 +91,7 @@ export default function BookingForm({ selectedPackage, onBack }) {
             "https://admin-dev.innovstem.com/api/slots",
             {
               params: { date: selectedDate },
+              timeout: 10000, // 10 second timeout
             }
           );
           const slotsArray = Object.values(response.data.data || {});
@@ -97,7 +123,7 @@ export default function BookingForm({ selectedPackage, onBack }) {
 
   const validateForm = useCallback(() => {
     const newErrors = {};
-    if (!formData.name || formData.name.length < 2)
+    if (!formData.name || formData.name.trim().length < 2)
       newErrors.name = "Name must be at least 2 characters";
     if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email))
       newErrors.email = "Please enter a valid email address";
@@ -123,58 +149,80 @@ export default function BookingForm({ selectedPackage, onBack }) {
 
     // Check if Razorpay is loaded
     if (!window.Razorpay || !isRazorpayLoaded) {
-      toast.error("Payment gateway not loaded. Please try again later.");
+      toast.error(
+        "Payment gateway not loaded. Please refresh the page and try again."
+      );
       return;
     }
 
-    const amountInPaise = selectedPackage.price_inr * 100;
+    // Validate package and amount
+    if (
+      !selectedPackage ||
+      !selectedPackage.price_inr ||
+      selectedPackage.price_inr <= 0
+    ) {
+      toast.error("Invalid package selected");
+      return;
+    }
+
+    const amountInPaise = Math.round(selectedPackage.price_inr * 100);
     const headers = {
       "Content-Type": "application/json",
+      Accept: "application/json",
     };
 
     try {
       setLoading(true);
 
-      // Retry create-order API up to 2 times
-      let orderResponse;
-      let retries = 2;
+      // Create order with proper error handling
+      console.log("Creating order with amount:", amountInPaise);
 
-      while (retries > 0) {
-        try {
-          orderResponse = await axios.post(
-            "https://admin-dev.innovstem.com/api/create-order",
-            {
-              amount: amountInPaise,
-              currency: "INR",
-              package_id: selectedPackage.id,
-              slot_id: parseInt(formData.slot_id),
-            },
-            { headers }
-          );
-          break;
-        } catch (retryError) {
-          retries--;
-          console.warn(`Retrying create-order API (${retries} retries left)`);
-          if (retries === 0) throw retryError;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+      const orderPayload = {
+        amount: amountInPaise,
+        currency: "INR",
+        package_id: selectedPackage.id,
+        slot_id: parseInt(formData.slot_id),
+      };
+
+      console.log("Order payload:", orderPayload);
+
+      const orderResponse = await axios.post(
+        "https://admin-dev.innovstem.com/api/create-order",
+        orderPayload,
+        {
+          headers,
+          timeout: 30000, // 30 second timeout
         }
-      }
+      );
+
+      console.log("Order response:", orderResponse.data);
 
       const { order_id } = orderResponse?.data?.data || {};
       if (!order_id) {
-        throw new Error("Order ID not received from create-order API");
+        throw new Error("Order ID not received from server");
       }
 
+      // Validate Razorpay key
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        throw new Error("Razorpay key not configured");
+      }
+
+      console.log("Using Razorpay key:", razorpayKey);
+      console.log("Order ID:", order_id);
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: amountInPaise,
         currency: "INR",
-        name: "Counseling Services",
+        name: "InnovSTEM Counseling",
         description: `Booking for ${selectedPackage.package_name}`,
-        order_id,
+        order_id: order_id,
         handler: async (response) => {
           try {
-            // Ensure all Razorpay response fields exist
+            console.log("Payment response:", response);
+
+            // Validate Razorpay response
             const {
               razorpay_payment_id,
               razorpay_order_id,
@@ -189,37 +237,67 @@ export default function BookingForm({ selectedPackage, onBack }) {
               throw new Error("Incomplete payment response from Razorpay");
             }
 
+            // Verify payment
+            const verificationPayload = {
+              razorpay_order_id,
+              razorpay_payment_id,
+              razorpay_signature,
+              appointment_data: {
+                name: formData.name.trim(),
+                mobile_number: formData.mobile_number,
+                email: formData.email.toLowerCase(),
+                class: formData.class,
+                gender: formData.gender,
+                ambition: formData.ambition,
+                user_type: formData.user_type || "Student",
+                package_id: selectedPackage.id,
+                slot_id: parseInt(formData.slot_id),
+                amount: amountInPaise,
+                note: formData.note.trim(),
+              },
+            };
+
+            console.log("Verification payload:", verificationPayload);
+
             const verificationResponse = await axios.post(
               "https://admin-dev.innovstem.com/api/verify-payment",
+              verificationPayload,
               {
-                razorpay_order_id,
-                razorpay_payment_id,
-                razorpay_signature,
-                appointment_data: {
-                  name: formData.name,
-                  mobile_number: formData.mobile_number,
-                  email: formData.email,
-                  class: formData.class,
-                  gender: formData.gender,
-                  ambition: formData.ambition,
-                  user_type: formData.user_type || "Student",
-                  package_id: selectedPackage.id,
-                  slot_id: parseInt(formData.slot_id),
-                  amount: amountInPaise,
-                },
-              },
-              { headers }
+                headers,
+                timeout: 30000,
+              }
             );
+
+            console.log("Verification response:", verificationResponse.data);
 
             if (verificationResponse?.data?.status === "success") {
               toast.success("Booking confirmed successfully!");
-              navigate("/");
-              onBack();
+              // Reset form
+              setFormData({
+                name: "",
+                email: "",
+                mobile_number: "",
+                class: "",
+                gender: "",
+                ambition: "",
+                user_type: "Student",
+                slot_id: "",
+                note: "",
+              });
+              setSelectedDate("");
+
+              // Use the onSuccess callback if provided, otherwise use onBack
+              if (onSuccess) {
+                onSuccess();
+              } else if (onBack) {
+                onBack();
+              }
             } else {
-              toast.error(
+              const errorMsg =
                 verificationResponse?.data?.message ||
-                  "Payment verification failed"
-              );
+                "Payment verification failed";
+              console.error("Verification failed:", errorMsg);
+              toast.error(errorMsg);
             }
           } catch (err) {
             console.error("Payment Verification Error:", err);
@@ -238,8 +316,8 @@ export default function BookingForm({ selectedPackage, onBack }) {
           }
         },
         prefill: {
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: formData.email.toLowerCase(),
           contact: formData.mobile_number,
         },
         theme: {
@@ -247,30 +325,67 @@ export default function BookingForm({ selectedPackage, onBack }) {
         },
         modal: {
           ondismiss: () => {
+            console.log("Payment modal dismissed");
             setLoading(false);
             toast.info("Payment cancelled");
           },
         },
+        // Add retry configuration
+        retry: {
+          enabled: true,
+          max_count: 3,
+        },
+        // Add timeout configuration
+        timeout: 300, // 5 minutes
       };
+
+      console.log("Opening Razorpay with options:", { ...options, key: "***" });
 
       const rzp = new window.Razorpay(options);
 
       rzp.on("payment.failed", (response) => {
         console.error("Payment Failed:", response);
         const errorDescription =
-          response?.error?.description || "Payment failed. Please try again.";
-        toast.error(errorDescription);
+          response?.error?.description ||
+          response?.error?.reason ||
+          "Payment failed. Please try again.";
+        toast.error(`Payment failed: ${errorDescription}`);
         setLoading(false);
+      });
+
+      // Add additional event handlers
+      rzp.on("payment.authorized", (response) => {
+        console.log("Payment authorized:", response);
+      });
+
+      rzp.on("payment.captured", (response) => {
+        console.log("Payment captured:", response);
       });
 
       rzp.open();
     } catch (error) {
       console.error("Payment Initiation Error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Error initiating payment"
-      );
+
+      let errorMessage = "Error initiating payment";
+
+      if (error.response) {
+        // Server responded with error
+        errorMessage =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          `Server error: ${error.response.status}`;
+        console.error("Server error details:", error.response.data);
+      } else if (error.request) {
+        // Request made but no response
+        errorMessage =
+          "Network error. Please check your connection and try again.";
+        console.error("Network error:", error.request);
+      } else {
+        // Something else happened
+        errorMessage = error.message || "Unknown error occurred";
+      }
+
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -546,9 +661,25 @@ export default function BookingForm({ selectedPackage, onBack }) {
             name="ambition"
             value={formData.ambition}
             onChange={handleChange}
-            className="block w-full rounded-lg border-0 py-2.5 px-3.5 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all duration-300 text-sm sm:text-base placeholder:text-gray-400"
+            className={`block w-full rounded-lg border-0 py-2.5 px-3.5 ring-1 ring-inset focus:ring-2 focus:ring-indigo-500 transition-all duration-300 text-sm sm:text-base placeholder:text-gray-400 ${
+              errors.ambition
+                ? "ring-red-500 focus:ring-red-500"
+                : "ring-gray-300"
+            }`}
             placeholder="Enter your career ambition (e.g., Engineer)"
           />
+          <AnimatePresence>
+            {errors.ambition && (
+              <motion.p
+                className="mt-1 text-xs sm:text-sm text-red-600"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {errors.ambition}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         <motion.div
@@ -576,10 +707,10 @@ export default function BookingForm({ selectedPackage, onBack }) {
 
         <motion.button
           type="submit"
-          className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
+          className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base font-medium"
           disabled={loading || !isRazorpayLoaded}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: loading ? 1 : 1.02 }}
+          whileTap={{ scale: loading ? 1 : 0.98 }}
         >
           {loading && (
             <svg
@@ -603,8 +734,22 @@ export default function BookingForm({ selectedPackage, onBack }) {
               ></path>
             </svg>
           )}
-          {loading ? "Processing..." : "Proceed to Payment"}
+          {loading
+            ? "Processing..."
+            : !isRazorpayLoaded
+            ? "Loading Payment Gateway..."
+            : "Proceed to Payment"}
         </motion.button>
+
+        {!isRazorpayLoaded && (
+          <motion.p
+            className="text-center text-sm text-gray-500 mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            Payment gateway is loading...
+          </motion.p>
+        )}
       </form>
     </motion.div>
   );

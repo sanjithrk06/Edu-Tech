@@ -120,6 +120,14 @@ const WebinarPage = () => {
     <div className="bg-gray-50 py-1">
       <Helmet>
         <title>{webinarDetails.title || "Webinar"}</title>
+        <meta name="title" content={webinarDetails.webinar_meta_title} />
+        <meta
+          name="description"
+          content={webinarDetails.webinar_meta_description}
+        />
+        <meta name="keywords" content={webinarDetails.webinar_meta_keyword} />
+        <meta property="og:url" content="https://innovstem.com/" />
+        <meta property="og:site_name" content="InnovSTEM" />
       </Helmet>
       <div className="container mx-auto px-4 text-left my-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

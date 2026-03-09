@@ -37,7 +37,7 @@ export const useAuthStore = create((set, get) => ({
       if (response.data.data.token) {
         Cookies.set("access_token", response.data.data.token, {
           expires: 7,
-          secure: process.env.REACT_APP_ENV === "production",
+          secure: import.meta.env.VITE_ENV === "production",
           sameSite: "strict",
         });
       }

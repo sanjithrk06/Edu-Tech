@@ -121,6 +121,14 @@ const CoursePage = () => {
     <div className="bg-gray-50 py-1">
       <Helmet>
         <title>{courseDetails.title || "Course"}</title>
+        <meta name="title" content={courseDetails.course_meta_title} />
+        <meta
+          name="description"
+          content={courseDetails.course_meta_description}
+        />
+        <meta name="keywords" content={courseDetails.course_meta_keyword} />
+        <meta property="og:url" content="https://innovstem.com/" />
+        <meta property="og:site_name" content="InnovSTEM" />
       </Helmet>
       <div className="container mx-auto px-4 text-left my-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

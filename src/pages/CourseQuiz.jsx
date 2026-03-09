@@ -42,7 +42,7 @@ const CourseQuiz = ({ quiz, onBack }) => {
         answers: { ...selectedAnswers },
       };
 
-      const res = await api.post(`quiz/${quiz.quiz_id}/submit`, payload);
+    const res = await api.post(`quiz/${quiz.quiz_id}/submit`, payload);
       const result = res.data?.data;
 
       if (result) {

@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
 import axios from "axios";
 import { Helmet } from "react-helmet-async";
 import { Loader } from "lucide-react";
+import api from "../../config/axios";
 
 const Resources = () => {
   const [resources, setResources] = useState([]);
@@ -17,10 +18,10 @@ const Resources = () => {
   const fetchResources = async (page = 1, search = "") => {
     try {
       setIsLoading(true);
-      const response = await axios.get(
+      const response = await api.get(
         search
-          ? `https://admin-dev.innovstem.com/api/resources/search?query=${search}&page=${page}`
-          : `https://admin-dev.innovstem.com/api/resources?page=${page}`
+          ? `resources/search?query=${search}&page=${page}`
+          : `resources?page=${page}`
       );
 
       console.log(response);
@@ -84,6 +85,19 @@ const Resources = () => {
     <div className="bg-gray-100 min-h-screen">
       <Helmet>
         <title>Resources</title>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="title" content="Resources | InnovSTEM" />
+        <meta
+          name="description"
+          content="InnovSTEM offers innovative K-12 STEM education programs and curriculum to inspire future innovators."
+        />
+        <meta
+          name="keywords"
+          content="STEM education, K-12 STEM curriculum, STEM programs, science education, InnovSTEM"
+        />
+        <meta property="og:url" content="https://innovstem.com/" />
+        <meta property="og:site_name" content="InnovSTEM" />
       </Helmet>
       <div className="py-5">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pt-8 bg-white rounded-2xl">
@@ -150,6 +164,9 @@ const Resources = () => {
                       image: resource.resource_thumbnail,
                       description: resource.resource_description,
                       slug: resource.resource_slug,
+                      type: resource.type,
+                      amount: resource.amount,
+                      has_access: resource.has_access,
                     }}
                   />
                 </div>

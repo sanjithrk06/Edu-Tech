@@ -120,9 +120,9 @@ const CareerDetails = ({ career, onBackClick }) => {
                 <Users className="text-blue-800" size={20} />
               </div>
               <div>
-                <p className="text-sm text-blue-800/70">Team</p>
+                <p className="text-sm text-blue-800/70">Domain</p>
                 <p className="font-medium text-blue-800">
-                  Education Technology
+                  {detailedCareer.domain}
                 </p>
               </div>
             </motion.div>
@@ -132,7 +132,9 @@ const CareerDetails = ({ career, onBackClick }) => {
               </div>
               <div>
                 <p className="text-sm text-blue-800/70">Experience</p>
-                <p className="font-medium text-blue-800">2+ Years</p>
+                <p className="font-medium text-blue-800">
+                  {detailedCareer.experience}+ Years
+                </p>
               </div>
             </motion.div>
           </div>

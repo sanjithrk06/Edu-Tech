@@ -24,7 +24,7 @@ const Home = () => {
       <StatsCounter />
       <Showcase />
       <OurTeams />
-      <Testimonials />
+      {/* <Testimonials /> */}
     </>
   );
 };

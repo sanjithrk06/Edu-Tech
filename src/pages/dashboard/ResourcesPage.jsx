@@ -22,8 +22,11 @@ const ResourcesPage = () => {
         const response = await api.get(`resources/d/${slug}`);
         setResource(response.data?.data);
       } catch (error) {
-        console.error("Failed to fetch resource:", error);
-        setError("We couldn't load this resource. Please try again later.");
+        console.error("Failed to fetch resource:", error.response.data);
+        setError(
+          error.response.data.message ||
+            "We couldn't load this resource. Please try again later."
+        );
       } finally {
         setLoading(false);
       }
@@ -111,8 +114,11 @@ const ResourcesPage = () => {
     <div className="bg-gray-50 min-h-screen">
       <Helmet>
         <title>{resource.resource_meta_title || "Resource"} | InnovSTEM</title>
+        <meta name="title" content={resource.resource_meta_title} />
         <meta name="description" content={resource.resource_meta_description} />
         <meta name="keywords" content={resource.resource_meta_keyword} />
+        <meta property="og:url" content="https://innovstem.com/" />
+        <meta property="og:site_name" content="InnovSTEM" />
       </Helmet>
 
       <div className="mx-auto px-4 py-8 max-w-5xl">

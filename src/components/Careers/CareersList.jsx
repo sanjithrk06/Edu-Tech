@@ -185,7 +185,7 @@ const CareersList = ({ onJobSelect, setPage, setSearchTerm }) => {
             >
               <div className="p-6 text-left relative">
                 <div className="absolute top-4 right-4 bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full">
-                  Education
+                  {career.domain}
                 </div>
                 <div className="flex items-start">
                   <div className="mr-4 mt-1 bg-blue-50 p-3 rounded-xl">
